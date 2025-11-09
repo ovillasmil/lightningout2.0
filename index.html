@@ -2,74 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Lightning Out 2.0 – Client-Side Attempt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lightning Out 2.0 – With Event Logging</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    #log { background: #f8f9fa; padding: 12px; border: 1px solid #ccc; margin-top: 16px; max-height: 300px; overflow: auto; }
+    .event { margin-bottom: 8px; padding-left: 8px; border-left: 3px solid #0070d2; }
+    .event.error { border-left-color: #c23934; }
+    .event.ready { border-left-color: #2e844a; }
+  </style>
 </head>
 <body>
-  <div id="status">Starting...</div>
+  <h2>Lightning Out 2.0 Debug Embed</h2>
+  <p>Status: <span id="status">Initializing...</span></p>
 
-  <!-- Fallback: Config for silent auth -->
-  <lightning-out-config id="loConfig" 
-    frontdoor-url="https://pghsa--full.sandbox.my.salesforce.com">
+  <!-- 🔑 Required config -->
+  <lightning-out-config frontdoor-url="https://pghsa--full.sandbox.my.salesforce.com">
   </lightning-out-config>
 
   <lightning-out-application components="c-gp-sfdc-out"></lightning-out-application>
-  <c-gp-sfdc-out case-id="81863" id="sfdcCmp"></c-gp-sfdc-out>
+  <c-gp-sfdc-out case-id="81863"></c-gp-sfdc-out>
+
+  <!-- 📜 Log area -->
+  <div id="log">
+    <div class="event">Listening for Lightning Out 2.0 events...</div>
+  </div>
 
   <script>
-    // ⚠️ NEVER hardcode these in real apps
-    const CLIENT_ID = 'YOUR_CONNECTED_APP_CONSUMER_KEY';       // ← Replace with real value
-    const CLIENT_SECRET = 'YOUR_CONNECTED_APP_SECRET';         // ← Replace with real value
-    const INSTANCE_URL = 'https://pghsa--full.sandbox.my.salesforce.com';
+    const log = document.getElementById('log');
+    const status = document.getElementById('status');
 
-    async function tryServerlessAuth() {
-      document.getElementById('status').textContent = 'Trying direct auth (will likely fail due to CORS)...';
-
-      try {
-        // This will FAIL in browser due to CORS and missing proxy
-        const response = await fetch(`${INSTANCE_URL}/services/oauth2/lightningoutsingleaccess`, {
-          method: 'POST',
-          mode: 'cors', // still blocked by Salesforce CORS policy
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            client_id: CLIENT_ID,
-            client_secret: CLIENT_SECRET
-          })
-        });
-
-        const data = await response.json();
-        if (data.frontdoor_url) {
-          document.getElementById('loConfig').setAttribute('frontdoor-url', data.frontdoor_url);
-          document.getElementById('status').textContent = 'Auth successful! Loading component...';
-          loadLightningScript();
-          return;
-        }
-      } catch (e) {
-        console.warn('Direct auth failed (expected):', e.message);
-      }
-
-      // ✅ FALL BACK to silent auth (the only working client-side method)
-      document.getElementById('status').textContent = 'Falling back to silent auth (ensure you are logged in to Salesforce)...';
-      loadLightningScript();
+    function addLog(message, type = 'info') {
+      const el = document.createElement('div');
+      el.className = `event ${type}`;
+      el.innerHTML = `<strong>[${new Date().toLocaleTimeString()}] ${type.toUpperCase()}:</strong> ${message}`;
+      log.appendChild(el);
+      log.scrollTop = log.scrollHeight;
+      console.log(`[${type.toUpperCase()}]`, message);
     }
 
-    function loadLightningScript() {
-      const script = document.createElement('script');
-      script.src = 'https://pghsa--full.sandbox.my.salesforce.com/lightning/lightning.out.latest/index.iife.prod.js';
-      script.onload = () => {
-        setTimeout(() => {
-          const cmp = document.getElementById('sfdcCmp');
-          if (cmp && cmp.shadowRoot) {
-            document.getElementById('status').textContent = '✅ Component loaded!';
-          } else {
-            document.getElementById('status').textContent = '⚠️ Check: Are you logged into Salesforce in this browser?';
-          }
-        }, 3000);
-      };
-      document.head.appendChild(script);
-    }
+    // 🔔 Listen to Lightning Out 2.0 custom events
+    document.addEventListener('lo.application.ready', (event) => {
+      status.textContent = '✅ Salesforce session established';
+      addLog('Salesforce session successfully established.', 'ready');
+    });
 
-    // Start
-    tryServerlessAuth();
+    document.addEventListener('lo.application.error', (event) => {
+      const { message, originalError } = event.detail;
+      status.textContent = '❌ Salesforce session failed';
+      addLog(`Application error: ${message}`, 'error');
+      console.error('Original error:', originalError);
+    });
+
+    document.addEventListener('lo.component.ready', (event) => {
+      status.textContent = '✅ Component rendered';
+      addLog('Lightning component rendered successfully.', 'ready');
+    });
+
+    document.addEventListener('lo.component.error', (event) => {
+      const { message, originalError } = event.detail;
+      status.textContent = '❌ Component error';
+      addLog(`Component error: ${message}`, 'error');
+      console.error('Component original error:', originalError);
+    });
+
+    // Load runtime
+    const script = document.createElement('script');
+    script.src = 'https://pghsa--full.sandbox.my.salesforce.com/lightning/lightning.out.latest/index.iife.prod.js';
+    document.head.appendChild(script);
   </script>
 </body>
 </html>
