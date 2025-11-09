@@ -1,72 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Salesforce Lightning Out Embed</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { margin: 0; padding: 1rem; font-family: sans-serif; }
-    .loading { color: #555; }
-  </style>
+  <title>Lightning Out 2.0 – Client-Side Attempt</title>
 </head>
 <body>
-  <h1>LIGHTING</h1>
-  <div class="loading">Loading Salesforce component...</div>
+  <div id="status">Starting...</div>
 
-  <!-- 1. Authentication config (REQUIRED in Summer '25) -->
-  <lightning-out-config
-    frontdoor-url="https://pghsa--full.sandbox.my.salesforce.com/lightning/out/auth">
+  <!-- Fallback: Config for silent auth -->
+  <lightning-out-config id="loConfig" 
+    frontdoor-url="https://pghsa--full.sandbox.my.salesforce.com">
   </lightning-out-config>
-  
-  <!-- Lightning Out declaration -->
+
   <lightning-out-application components="c-gp-sfdc-out"></lightning-out-application>
-
-  <!-- Component (will be configured via URL params) -->
-  <c-gp-sfdc-out id="sfdcCmp"></c-gp-sfdc-out>
-
-  <!-- Lightning Out 2.0 runtime -->
-  <script 
-    src="https://pghsa--full.sandbox.my.salesforce.com/lightning/lightning.out.latest/index.iife.prod.js"
-    async
-    onload="configureComponent()">
-  </script>
+  <c-gp-sfdc-out case-id="81863" id="sfdcCmp"></c-gp-sfdc-out>
 
   <script>
-    window.lightningOutConfig = {
-    debug: true
-  };
-    function getUrlParam(name) {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get(name);
-    }
+    // ⚠️ NEVER hardcode these in real apps
+    const CLIENT_ID = 'YOUR_CONNECTED_APP_CONSUMER_KEY';       // ← Replace with real value
+    const CLIENT_SECRET = 'YOUR_CONNECTED_APP_SECRET';         // ← Replace with real value
+    const INSTANCE_URL = 'https://pghsa--full.sandbox.my.salesforce.com';
 
-    function configureComponent() {
-      const cmp = document.getElementById('sfdcCmp');
-      if (!cmp) return;
+    async function tryServerlessAuth() {
+      document.getElementById('status').textContent = 'Trying direct auth (will likely fail due to CORS)...';
 
-      // Set attributes from URL parameters
-      cmp.setAttribute('case-id', getUrlParam('caseId') || '81863');
-      cmp.setAttribute('cont-codi', getUrlParam('contCodi') || '');
-      cmp.setAttribute('email', getUrlParam('email') || '');
-      cmp.setAttribute('sprinklr', getUrlParam('sprinklr') || '');
-      cmp.setAttribute('fromsprinklr', getUrlParam('fromsprinklr') || '');
+      try {
+        // This will FAIL in browser due to CORS and missing proxy
+        const response = await fetch(`${INSTANCE_URL}/services/oauth2/lightningoutsingleaccess`, {
+          method: 'POST',
+          mode: 'cors', // still blocked by Salesforce CORS policy
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET
+          })
+        });
 
-      // Optional: hide loading message
-      //document.querySelector('.loading').style.display = 'none';
-    }
-
-    // Fallback if script fails to load
-    setTimeout(() => {
-      if (document.querySelector('.loading').style.display !== 'none') {
-        document.body.innerHTML = `
-          <h3>⚠️ Authentication Required</h3>
-          <p>Please log in to Salesforce first:</p>
-          <p><a href="https://pghsa--full.sandbox.my.salesforce.com" target="_blank">
-            Open Salesforce Login
-          </a></p>
-        `;
+        const data = await response.json();
+        if (data.frontdoor_url) {
+          document.getElementById('loConfig').setAttribute('frontdoor-url', data.frontdoor_url);
+          document.getElementById('status').textContent = 'Auth successful! Loading component...';
+          loadLightningScript();
+          return;
+        }
+      } catch (e) {
+        console.warn('Direct auth failed (expected):', e.message);
       }
-    }, 6000);
+
+      // ✅ FALL BACK to silent auth (the only working client-side method)
+      document.getElementById('status').textContent = 'Falling back to silent auth (ensure you are logged in to Salesforce)...';
+      loadLightningScript();
+    }
+
+    function loadLightningScript() {
+      const script = document.createElement('script');
+      script.src = 'https://pghsa--full.sandbox.my.salesforce.com/lightning/lightning.out.latest/index.iife.prod.js';
+      script.onload = () => {
+        setTimeout(() => {
+          const cmp = document.getElementById('sfdcCmp');
+          if (cmp && cmp.shadowRoot) {
+            document.getElementById('status').textContent = '✅ Component loaded!';
+          } else {
+            document.getElementById('status').textContent = '⚠️ Check: Are you logged into Salesforce in this browser?';
+          }
+        }, 3000);
+      };
+      document.head.appendChild(script);
+    }
+
+    // Start
+    tryServerlessAuth();
   </script>
 </body>
 </html>
