@@ -50,7 +50,7 @@
       const { message, originalError } = event.detail;
       status.textContent = '❌ Salesforce session failed';
       addLog(`Application error: ${message}`, 'error');
-      console.error('Original error:', originalError);
+      console.log('Original error:', originalError);
     });
 
     document.addEventListener('lo.component.ready', (event) => {
@@ -62,7 +62,7 @@
       const { message, originalError } = event.detail;
       status.textContent = '❌ Component error';
       addLog(`Component error: ${message}`, 'error');
-      console.error('Component original error:', originalError);
+      console.log('Component original error:', originalError);
     });
 
     // Load runtime
