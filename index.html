@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Salesforce Lightning Out Embed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { margin: 0; padding: 1rem; font-family: sans-serif; }
+    .loading { color: #555; }
+  </style>
+</head>
+<body>
+  <div class="loading">Loading Salesforce component...</div>
+
+  <!-- Lightning Out declaration -->
+  <lightning-out-application components="c-gp-sfdc-out"></lightning-out-application>
+
+  <!-- Component (will be configured via URL params) -->
+  <c-gp-sfdc-out id="sfdcCmp"></c-gp-sfdc-out>
+
+  <!-- Lightning Out 2.0 runtime -->
+  <script 
+    src="https://pghsa--full.sandbox.my.salesforce.com/lightning/lightning.out.latest/index.iife.prod.js"
+    async
+    onload="configureComponent()">
+  </script>
+
+  <script>
+    function getUrlParam(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+
+    function configureComponent() {
+      const cmp = document.getElementById('sfdcCmp');
+      if (!cmp) return;
+
+      // Set attributes from URL parameters
+      cmp.setAttribute('case-id', getUrlParam('caseId') || '81863');
+      cmp.setAttribute('cont-codi', getUrlParam('contCodi') || '');
+      cmp.setAttribute('email', getUrlParam('email') || '');
+      cmp.setAttribute('sprinklr', getUrlParam('sprinklr') || '');
+      cmp.setAttribute('fromsprinklr', getUrlParam('fromsprinklr') || '');
+
+      // Optional: hide loading message
+      document.querySelector('.loading').style.display = 'none';
+    }
+
+    // Fallback if script fails to load
+    setTimeout(() => {
+      if (document.querySelector('.loading').style.display !== 'none') {
+        document.body.innerHTML = `
+          <h3>⚠️ Authentication Required</h3>
+          <p>Please log in to Salesforce first:</p>
+          <p><a href="https://pghsa--full.sandbox.my.salesforce.com" target="_blank">
+            Open Salesforce Login
+          </a></p>
+        `;
+      }
+    }, 6000);
+  </script>
+</body>
+</html>
