@@ -37,7 +37,7 @@
       el.innerHTML = `<strong>[${new Date().toLocaleTimeString()}] ${type.toUpperCase()}:</strong> ${message}`;
       log.appendChild(el);
       log.scrollTop = log.scrollHeight;
-      console.log(`[${type.toUpperCase()}]`, message);
+      console.log(`[${type.toUpperCase()}]`, JSON.stringify(message));
     }
 
     // 🔔 Listen to Lightning Out 2.0 custom events
@@ -50,7 +50,7 @@
       const { message, originalError } = event.detail;
       status.textContent = '❌ Salesforce session failed';
       addLog(`Application error: ${message}`, 'error');
-      console.log('Original error:', originalError);
+      console.log('Original error:', JSON.stringify(originalError));
     });
 
     document.addEventListener('lo.component.ready', (event) => {
@@ -62,7 +62,7 @@
       const { message, originalError } = event.detail;
       status.textContent = '❌ Component error';
       addLog(`Component error: ${message}`, 'error');
-      console.log('Component original error:', originalError);
+      console.log('Component original error:', JSON.stringify(originalError));
     });
 
     // Load runtime
