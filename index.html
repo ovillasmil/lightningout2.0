@@ -13,6 +13,11 @@
   <h1>LIGHTING</h1>
   <div class="loading">Loading Salesforce component...</div>
 
+  <!-- 1. Authentication config (REQUIRED in Summer '25) -->
+  <lightning-out-config
+    frontdoor-url="https://pghsa--full.sandbox.my.salesforce.com/lightning/out/auth">
+  </lightning-out-config>
+  
   <!-- Lightning Out declaration -->
   <lightning-out-application components="c-gp-sfdc-out"></lightning-out-application>
 
