@@ -17,7 +17,9 @@
   <p>Status: <span id="status">Initializing...</span></p>
 
   <!-- 🔑 Required config -->
-  <lightning-out-config frontdoor-url="https://pghsa--full.sandbox.my.salesforce.com">
+  <lightning-out-config 
+    frontdoor-url="https://pghsa--full.sandbox.my.salesforce.com" 
+    components="c-gp-sfdc-out">
   </lightning-out-config>
 
   <lightning-out-application components="c-gp-sfdc-out"></lightning-out-application>
